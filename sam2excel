@@ -1,68 +1,51 @@
-Option Explicit
+Sub SplitLargeSAMFile()
 
-Const FILE_PATH = "C:\path\to\large.sam" ' 分割するSAMファイルのパス
-Const MAX_SIZE = 500000000 ' 分割する単位（バイト）
-
-Dim objExcel, objWorkbook, objSheet
-Dim objFSO, objTextStream
-Dim i, j, k, n, count, fileSize
-Dim strLine, arrData, arrHeader
-
-Set objExcel = CreateObject("Excel.Application")
-objExcel.Visible = True ' Excelを表示する
-Set objWorkbook = objExcel.Workbooks.Add()
-Set objSheet = objWorkbook.Sheets(1)
-
-Set objFSO = CreateObject("Scripting.FileSystemObject")
-Set objTextStream = objFSO.OpenTextFile(FILE_PATH)
-
-' ヘッダー行を読み込む
-strLine = objTextStream.ReadLine()
-arrHeader = Split(strLine, vbTab)
-For i = 0 To UBound(arrHeader)
-    objSheet.Cells(1, i + 1).Value = arrHeader(i)
-Next
-
-' データ行を読み込む
-count = 1
-n = 1
-fileSize = objFSO.GetFile(FILE_PATH).Size
-Do While Not objTextStream.AtEndOfStream
-    strLine = objTextStream.ReadLine()
-    arrData = Split(strLine, vbTab)
+    Dim filePath As String
+    Dim fileNum As Integer
+    Dim fileSize As Double
+    Dim chunkSize As Double
+    Dim numChunks As Integer
+    Dim chunkNum As Integer
+    Dim fileData() As Byte
+    Dim i As Integer
     
-    ' 分割ファイルのサイズがMAX_SIZEを超えた場合、新しいExcelファイルに書き込む
-    If count > MAX_SIZE Or ((n * MAX_SIZE) + count) > fileSize Then
-        objWorkbook.SaveAs "C:\path\to\output_" & n & ".xlsx"
-        objWorkbook.Close False
-        Set objWorkbook = objExcel.Workbooks.Add()
-        Set objSheet = objWorkbook.Sheets(1)
+    ' Set the file path for the SAM file
+    filePath = "C:\ExampleFolder\LargeSAMFile.sam"
+    
+    ' Determine the size of the file in bytes
+    fileSize = FileLen(filePath)
+    
+    ' Set the chunk size to 500 MB
+    chunkSize = 500 * 1024 * 1024
+    
+    ' Determine the number of chunks required
+    numChunks = Int(fileSize / chunkSize) + 1
+    
+    ' Open the file
+    fileNum = FreeFile()
+    Open filePath For Binary Access Read Write As #fileNum
+    
+    ' Loop through each chunk and save it to a separate file
+    For chunkNum = 1 To numChunks
         
-        ' ヘッダー行を書き込む
-        For i = 0 To UBound(arrHeader)
-            objSheet.Cells(1, i + 1).Value = arrHeader(i)
-        Next
+        ' Determine the size of the current chunk
+        If chunkNum < numChunks Then
+            ReDim fileData(1 To chunkSize)
+        Else
+            ReDim fileData(1 To fileSize Mod chunkSize)
+        End If
         
-        n = n + 1
-        count = 1
-    End If
+        ' Read the data from the file
+        Get #fileNum, , fileData
+        
+        ' Save the chunk to a separate file
+        Open "C:\ExampleFolder\LargeSAMFile_" & chunkNum & ".sam" For Binary Access Write As #chunkNum
+        Put #chunkNum, , fileData
+        Close #chunkNum
+        
+    Next chunkNum
     
-    ' データ行を書き込む
-    For j = 0 To UBound(arrData)
-        objSheet.Cells(count + 1, j + 1).Value = arrData(j)
-    Next
-    
-    count = count + 1
-Loop
+    ' Close the original file
+    Close #fileNum
 
-' 最後のExcelファイルを保存する
-objWorkbook.SaveAs "C:\path\to\output_" & n & ".xlsx"
-objWorkbook.Close False
-
-' 終了処理
-objTextStream.Close
-Set objTextStream = Nothing
-Set objFSO = Nothing
-Set objSheet = Nothing
-Set objWorkbook = Nothing
-Set objExcel = Nothing
+End Sub
