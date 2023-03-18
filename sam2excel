@@ -8,7 +8,43 @@ Sub SplitLargeSAMFile()
     Dim chunkNum As Integer
     Dim fileData() As Byte
     Dim i As Integer
-    
+    import java.io.*;
+
+public class SAMSplitter {
+    public static void main(String[] args) throws IOException {
+        String inputFilePath = "input.sam"; // 元のファイルパス
+        int chunkSize = 500 * 1024 * 1024; // ファイルを分割する単位サイズ（バイト単位）
+        int bufferSize = 8192; // バッファサイズ（バイト単位）
+
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inputFilePath), bufferSize)) {
+            byte[] buffer = new byte[bufferSize];
+            int bytesRead;
+            int chunkIndex = 0;
+            int chunkBytesWritten = 0;
+            BufferedOutputStream bos = null;
+
+            while ((bytesRead = bis.read(buffer)) != -1) {
+                if (chunkBytesWritten == 0) {
+                    bos = new BufferedOutputStream(new FileOutputStream(inputFilePath + ".part" + chunkIndex), bufferSize);
+                }
+
+                bos.write(buffer, 0, bytesRead);
+                chunkBytesWritten += bytesRead;
+
+                if (chunkBytesWritten >= chunkSize) {
+                    bos.close();
+                    chunkIndex++;
+                    chunkBytesWritten = 0;
+                }
+            }
+
+            if (bos != null) {
+                bos.close();
+            }
+        }
+    }
+}
+
     ' Set the file path for the SAM file
     filePath = "C:\ExampleFolder\LargeSAMFile.sam"
     
