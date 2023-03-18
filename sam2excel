@@ -1,87 +1,60 @@
-Sub SplitLargeSAMFile()
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
-    Dim filePath As String
-    Dim fileNum As Integer
-    Dim fileSize As Double
-    Dim chunkSize As Double
-    Dim numChunks As Integer
-    Dim chunkNum As Integer
-    Dim fileData() As Byte
-    Dim i As Integer
-    import java.io.*;
+public class FileComparator {
+    public static void main(String[] args) {
+        if (args.length != 2) {
+            System.out.println("Usage: java FileComparator <file1> <file2>");
+            return;
+        }
 
-public class SAMSplitter {
-    public static void main(String[] args) throws IOException {
-        String inputFilePath = "input.sam"; // 元のファイルパス
-        int chunkSize = 500 * 1024 * 1024; // ファイルを分割する単位サイズ（バイト単位）
-        int bufferSize = 8192; // バッファサイズ（バイト単位）
+        String file1 = args[0];
+        String file2 = args[1];
 
-        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(inputFilePath), bufferSize)) {
-            byte[] buffer = new byte[bufferSize];
-            int bytesRead;
-            int chunkIndex = 0;
-            int chunkBytesWritten = 0;
-            BufferedOutputStream bos = null;
+        try (BufferedReader reader1 = new BufferedReader(new FileReader(file1));
+             BufferedReader reader2 = new BufferedReader(new FileReader(file2))) {
 
-            while ((bytesRead = bis.read(buffer)) != -1) {
-                if (chunkBytesWritten == 0) {
-                    bos = new BufferedOutputStream(new FileOutputStream(inputFilePath + ".part" + chunkIndex), bufferSize);
+            String line1 = reader1.readLine();
+            String line2 = reader2.readLine();
+
+            int lineNum = 1;
+
+            while (line1 != null || line2 != null) {
+                if (line1 == null) {
+                    System.out.println("File1 has ended at line " + lineNum);
+                    System.out.println("File2 has the following lines:");
+                    while (line2 != null) {
+                        System.out.println(line2);
+                        line2 = reader2.readLine();
+                    }
+                    return;
                 }
 
-                bos.write(buffer, 0, bytesRead);
-                chunkBytesWritten += bytesRead;
-
-                if (chunkBytesWritten >= chunkSize) {
-                    bos.close();
-                    chunkIndex++;
-                    chunkBytesWritten = 0;
+                if (line2 == null) {
+                    System.out.println("File2 has ended at line " + lineNum);
+                    System.out.println("File1 has the following lines:");
+                    while (line1 != null) {
+                        System.out.println(line1);
+                        line1 = reader1.readLine();
+                    }
+                    return;
                 }
+
+                if (!line1.equals(line2)) {
+                    System.out.println("Line " + lineNum + " is different:");
+                    System.out.println(file1 + ": " + line1);
+                    System.out.println(file2 + ": " + line2);
+                }
+
+                line1 = reader1.readLine();
+                line2 = reader2.readLine();
+                lineNum++;
             }
 
-            if (bos != null) {
-                bos.close();
-            }
+            System.out.println("Files are identical.");
+        } catch (IOException e) {
+            System.err.println("Error reading files: " + e.getMessage());
         }
     }
 }
-
-    ' Set the file path for the SAM file
-    filePath = "C:\ExampleFolder\LargeSAMFile.sam"
-    
-    ' Determine the size of the file in bytes
-    fileSize = FileLen(filePath)
-    
-    ' Set the chunk size to 500 MB
-    chunkSize = 500 * 1024 * 1024
-    
-    ' Determine the number of chunks required
-    numChunks = Int(fileSize / chunkSize) + 1
-    
-    ' Open the file
-    fileNum = FreeFile()
-    Open filePath For Binary Access Read Write As #fileNum
-    
-    ' Loop through each chunk and save it to a separate file
-    For chunkNum = 1 To numChunks
-        
-        ' Determine the size of the current chunk
-        If chunkNum < numChunks Then
-            ReDim fileData(1 To chunkSize)
-        Else
-            ReDim fileData(1 To fileSize Mod chunkSize)
-        End If
-        
-        ' Read the data from the file
-        Get #fileNum, , fileData
-        
-        ' Save the chunk to a separate file
-        Open "C:\ExampleFolder\LargeSAMFile_" & chunkNum & ".sam" For Binary Access Write As #chunkNum
-        Put #chunkNum, , fileData
-        Close #chunkNum
-        
-    Next chunkNum
-    
-    ' Close the original file
-    Close #fileNum
-
-End Sub
