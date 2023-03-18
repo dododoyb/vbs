@@ -1,0 +1,68 @@
+Option Explicit
+
+Const FILE_PATH = "C:\path\to\large.sam" ' 分割するSAMファイルのパス
+Const MAX_SIZE = 500000000 ' 分割する単位（バイト）
+
+Dim objExcel, objWorkbook, objSheet
+Dim objFSO, objTextStream
+Dim i, j, k, n, count, fileSize
+Dim strLine, arrData, arrHeader
+
+Set objExcel = CreateObject("Excel.Application")
+objExcel.Visible = True ' Excelを表示する
+Set objWorkbook = objExcel.Workbooks.Add()
+Set objSheet = objWorkbook.Sheets(1)
+
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+Set objTextStream = objFSO.OpenTextFile(FILE_PATH)
+
+' ヘッダー行を読み込む
+strLine = objTextStream.ReadLine()
+arrHeader = Split(strLine, vbTab)
+For i = 0 To UBound(arrHeader)
+    objSheet.Cells(1, i + 1).Value = arrHeader(i)
+Next
+
+' データ行を読み込む
+count = 1
+n = 1
+fileSize = objFSO.GetFile(FILE_PATH).Size
+Do While Not objTextStream.AtEndOfStream
+    strLine = objTextStream.ReadLine()
+    arrData = Split(strLine, vbTab)
+    
+    ' 分割ファイルのサイズがMAX_SIZEを超えた場合、新しいExcelファイルに書き込む
+    If count > MAX_SIZE Or ((n * MAX_SIZE) + count) > fileSize Then
+        objWorkbook.SaveAs "C:\path\to\output_" & n & ".xlsx"
+        objWorkbook.Close False
+        Set objWorkbook = objExcel.Workbooks.Add()
+        Set objSheet = objWorkbook.Sheets(1)
+        
+        ' ヘッダー行を書き込む
+        For i = 0 To UBound(arrHeader)
+            objSheet.Cells(1, i + 1).Value = arrHeader(i)
+        Next
+        
+        n = n + 1
+        count = 1
+    End If
+    
+    ' データ行を書き込む
+    For j = 0 To UBound(arrData)
+        objSheet.Cells(count + 1, j + 1).Value = arrData(j)
+    Next
+    
+    count = count + 1
+Loop
+
+' 最後のExcelファイルを保存する
+objWorkbook.SaveAs "C:\path\to\output_" & n & ".xlsx"
+objWorkbook.Close False
+
+' 終了処理
+objTextStream.Close
+Set objTextStream = Nothing
+Set objFSO = Nothing
+Set objSheet = Nothing
+Set objWorkbook = Nothing
+Set objExcel = Nothing
