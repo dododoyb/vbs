@@ -69,6 +69,9 @@ Function resetLinePoint(ByVal rowNum As Integer) As Integer
     Wend
     rowNum = rowNum + 1
     resetLinePoint = rowNum
-End Function
+End Function                   
 
+Function get(byval str as String)As String
+    get=StrConv(MidB(StrConv(str, vbFromUnicode), 7, 66), vbUnicode)
+End Function
 
