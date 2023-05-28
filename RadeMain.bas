@@ -74,4 +74,34 @@ End Function
 Function get(byval str as String)As String
     get=StrConv(MidB(StrConv(str, vbFromUnicode), 7, 66), vbUnicode)
 End Function
+                                
+
+                                
+                                
+                                
+Sub GetFileNames()
+    Dim FolderPath As String
+    Dim FileName As String
+    Dim FileNames As Collection
+    
+    ' フォルダのパスを指定
+    FolderPath = "C:\Path\To\Folder"
+    
+    ' Collectionを作成
+    Set FileNames = New Collection
+    
+    ' フォルダ内のファイルをループで処理
+    FileName = Dir(FolderPath & "\*.*")
+    Do While FileName <> ""
+        ' ファイル名をCollectionに追加
+        FileNames.Add FileName
+        FileName = Dir
+    Loop
+    
+    ' Collectionの中身を表示（例：メッセージボックスに表示）
+    Dim File As Variant
+    For Each File In FileNames
+        MsgBox File
+    Next File
+End Sub
 
