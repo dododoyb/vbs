@@ -1,1 +1,21 @@
-Get-Content -Path "C:\Users\Username\Documents\example.txt" -TotalCount 100 | Set-Content -Path "C:\Users\Username\Documents\newfile.txt"
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class SAMFileReader {
+    public static void main(String[] args) {
+        String sourceFile = "input.sam"; // 元のSAMファイルのパス
+        String destinationFile = "output.sam"; // 新しいSAMファイルのパス
+        int byteLimit = 1024; // Nバイトの制限
+
+        try (FileInputStream fis = new FileInputStream(sourceFile);
+             FileOutputStream fos = new FileOutputStream(destinationFile)) {
+
+            byte[] buffer = new byte[byteLimit];
+            int bytesRead = fis.read(buffer, 0, byteLimit);
+            fos.write(buffer, 0, bytesRead);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
